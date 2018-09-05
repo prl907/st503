@@ -1,9 +1,13 @@
 
 
-## ST503 Fall 2018 Discussion 2 Group A
-## Author: Robin Baldeo                                    
+## ST503 Fall 2018 Discussion # 2 
+## Group: A
+## Author: Robin Baldeo, Yuxi Wang, Christopher Angrisani, Wenjin Liu                                    
 
-set.seed(618)
+##########################################################################################################################
+
+
+set.seed(123)
 
 x<-c(1:20)
 
@@ -37,8 +41,10 @@ m1$coefficients
 # Multiple R-squared:  0.8974,  Adjusted R-squared:  0.8917 
 # F-statistic: 157.5 on 1 and 18 DF,  p-value: 2.45e-10
 
-# I think based on the r square value of 90% shown in the summary output the linear model is a good fit. 
-# This is also supported by the overlay in the attachment, where the least square regression line fits the data.
+
+# Comment:
+# I think this model is a good fit of the data. 
+# The regression line seems to be a good fit and R2 is very close to 1 (0.8974146 )
 
 ##########################################################################################################################
 
@@ -46,7 +52,7 @@ m1$coefficients
 
 # new model
 m2<-lm(y~x+I(x^2)+ I(x^3) + I(x^4) + I(x^5) + I(x^6) + I(x^7)+ I(x^8) + I(x^9))
-summary(m2)
+summary(m2)$r.square
 
 #overlay line onto scatter plot in question 1
 lines(fitted(m2), col=2, lty = 2) 
@@ -74,10 +80,10 @@ lines(fitted(m2), col=2, lty = 2)
 # F-statistic: 12.18 on 9 and 10 DF,  p-value: 0.0002708
 
 
-# This second model appears to be a much better fit than the first model. 
-# R square is much higher, however this is to be expected with the addition of more predicators, but looking at the plot. 
-# The curve regression line appears to be a much better fit. 
-
+# Comments: 
+# This model seems to be much better. 
+# R2 has increased to 0.9164, which is expected with more explanatory variables being included in the regression equation, 
+# but also the curve itself seems to better fit the data.
 
 ##########################################################################################################################
 
@@ -88,6 +94,7 @@ lines(fitted(m2), col=2, lty = 2)
 
 #create matrix p = 20 X n = 10
 x1<-matrix(, nrow = length(y), ncol = 10)
+
 for(p in 1:nrow(x1)){
   for(n in 1:ncol(x1)){
     #seeding matrix
@@ -100,14 +107,15 @@ manaul<-solve(x1%*%t(x1))%*%(t(x1)%*%y)
 
 #det(x1%*%t(x1))
 
+
+# Comment :
 # Calculating the coefficients using the formula throws an error:
 
 # "Error in solve.default(x1 %*% t(x1)) : 
 #   system is computationally singular: reciprocal condition number = 1.5363e-27"
+# After testing all parts of the equation, I found it failed to calculate inversion of (XTX). 
 
-# At first glance my (BB')^-1 seems like a singular matrix based on the error message. 
-# Checking I see my determinant is not 0, so this can't be a singular matrix. 
-# I think the error is within "solve". 
-# The solve function sees this large matrix as a singular matrix, maybe when a matrix goes beyond a certain size the solve function converts it to a singular matrix. 
+# Since some numbers of (XTX) are large, 
+# the determinant may be overflowing due to scaling issues. Since the determinent of (XTX) is -7.081484e+110
 
 

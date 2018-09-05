@@ -1,5 +1,5 @@
 
-## ST503 Fall 2018 Hw1
+## ST503 Fall 2018 Hw1 codes
 ## Author: Robin Baldeo  
 
 
@@ -19,7 +19,7 @@ q4_4<-lm(lpsa~lcavol+ lweight+ svi+lbph, data= prostate)
 q4_5<-lm(lpsa~lcavol+ lweight+ svi+lbph+ age, data= prostate)
 q4_6<-lm(lpsa~lcavol+ lweight+ svi+lbph+ age+ lcp, data= prostate)
 q4_7<-lm(lpsa~lcavol+ lweight+ svi+lbph+ age+ lcp + pgg45, data= prostate)
-q4_8<-lm(lpsa~lcavol+ lweight+ svi+lbph+ age+ lcp + gleason, data= prostate)
+q4_8<-lm(lpsa~lcavol+ lweight+ svi+lbph+ age+ lcp + pgg45 + gleason, data= prostate)
 
 #plotting the r-squared and the resedual error
 plotD<-data.frame(residual=double(), points= double())
@@ -32,14 +32,14 @@ for (i in 1:8){
   print(paste("Model q4_", i, " has residual standard error = ", r, " and r squared = ", p, sep=""))
 }
 
-# [1] "Model q4_1 has residual standard error = 0.708605023339922 and r squared = 0.650643995570126"
-# [1] "Model q4_2 has residual standard error = 0.787499423513711 and r squared = 0.539431908779019"
-# [1] "Model q4_3 has residual standard error = 0.750646932552003 and r squared = 0.585934512070213"
-# [1] "Model q4_4 has residual standard error = 0.71680938995835 and r squared = 0.626440253553244"
-# [1] "Model q4_5 has residual standard error = 0.710823197727069 and r squared = 0.636603479801418"
-# [1] "Model q4_6 has residual standard error = 0.707305372441944 and r squared = 0.644102401261455"
-# [1] "Model q4_7 has residual standard error = 0.710213512046953 and r squared = 0.645112974108872"
-# [1] "Model q4_8 has residual standard error = 0.704753265042738 and r squared = 0.65443165616093"
+# [1] "Model q4_1 has residual standard error = 0.787499423513711 and r squared = 0.539431908779019"
+# [1] "Model q4_2 has residual standard error = 0.750646932552003 and r squared = 0.585934512070213"
+# [1] "Model q4_3 has residual standard error = 0.71680938995835 and r squared = 0.626440253553244"
+# [1] "Model q4_4 has residual standard error = 0.710823197727069 and r squared = 0.636603479801418"
+# [1] "Model q4_5 has residual standard error = 0.707305372441944 and r squared = 0.644102401261455"
+# [1] "Model q4_6 has residual standard error = 0.710213512046953 and r squared = 0.645112974108872"
+# [1] "Model q4_7 has residual standard error = 0.704753265042738 and r squared = 0.65443165616093"
+# [1] "Model q4_8 has residual standard error = 0.708415511834863 and r squared = 0.654754085299708"
 
 
 #plotting the trends in the two statistics
