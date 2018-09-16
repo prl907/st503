@@ -1,0 +1,210 @@
+---
+title: "ST 503 Hw 2"
+author: "Robin Baldeo"
+output:  word_document
+
+---
+<style>
+body {
+    position: absolute;
+    left: 0px;
+    }
+</style>
+
+### Question 1(Exercise 3.1 in LMR)
+```{r message = FALSE, error= FALSE,warning=FALSE, echo = FALSE}
+library("faraway")
+library("ellipse")
+
+```
+
+###(A)
+```{r}
+#full model
+lmod<-lm(lpsa~lcavol+lweight+age+lbph+ svi+lcp+ gleason+ pgg45, data=prostate )
+
+#summary
+summary(lmod)
+
+#a
+#at the 90% Ci reject Ho because 0 is not within the interval
+confint(lmod, "age", level=.90)
+
+#at the 95% Ci fail to reject H0 becuause 0 is within interval
+confint(lmod, "age")
+
+```
+
+At the 90% level we reject the null hypothesis of age being insignificant because 0 is not within the CI, However, at 95% level we fail to reject the null because 0 is within the interval. This also corresponds to the p-value for age in the summary output. Age p-value is greater than .05 because of this we fail to reject the null.So Both the summary ouput p-value and Ci at the 95% level gives the same conclusion.
+
+###(B)
+```{R}
+ci<-confint(lmod)
+#ellipse
+plot(ellipse(lmod, c(4,5)), type = "l")
+#CI
+abline(v=ci[4,], h=ci[5,], lty=2)
+#marking orgin with red lines
+abline(h= 0, v = 0, col = "red")
+
+#partial f test to confirm
+lmodR<-lm(lpsa~lcavol+lweight+ svi+lcp+ gleason+ pgg45, data = prostate)
+anova(lmodR, lmod)
+
+
+```
+
+Here we fail to reject the null because the origin(red lines) falls within the ellipse. Therefore, these variables age and ibph can be removed from the model because of no significant contribution to the quality of the model.This is also confirmed with a partial f-test. Here p-value> .05 confirming that the values age and lbph don't contribute to the model in a significant way.
+
+
+###(C)
+```{R}
+set.seed(123)
+n<- 10000
+
+ttest<-numeric(n)
+
+#looping n times 
+for(i in 1:n){
+  #storing all t values into the ttest vector
+  ttest[i]= (summary(lm(lpsa~lcavol+lweight+sample(age)+lbph+ svi+lcp+ gleason+ pgg45, data=prostate )))$coefficients[4,3]
+}
+
+#simulated p-valu for t-test
+2 * mean(ttest<summary(lmod)$coefficients[4,3]) 
+
+hist(ttest, freq = F, col = "wheat")
+x<-ttest
+curve(dt(x, length(x)), add=TRUE, col = "red")
+
+
+```
+
+The permutation method corresponds to the p-value from the summary output. The simulated p-value for age is `r 2 * mean(ttest<summary(lmod)$coefficients[4,3])` which closely matches the summary value of `r summary(lmod)$coefficients[4,4]`.
+
+
+### Question 2(Exercise 3.5 on page 50 of LMR.)
+
+
+From class lecture notes:  $$ R^2 = 1-  \frac{\sum_{i= 1}^{n} (y_i- \hat{y_i})^ 2}{\sum_{i= 1}^{n} (y_i- \bar{y_i})^ 2}$$
+  
+Where $RSS= \sum_{i= 1}^{n} (y_i- \hat{y_i})^ 2$ and $TSS = \sum_{i= 1}^{n} (y_i- \bar{y_i})^ 2$.
+As a result: 
+$$
+\begin{aligned}
+&R^2= 1-\frac{RSS}{TSS} \\
+&\frac{RSS}{TSS}= 1-R^2\\
+&RSS= (1-R^2) \times TSS\\
+&(1-R^2)^{-1}= \frac{TSS}{RSS} .....(A)
+\end{aligned}
+$$
+Now the F test from page 35 of text book is given as: 
+$$
+\begin{aligned}
+&F= \frac{\frac{TSS-RSS}{p-1}} {\frac{RSS}{p-1}} \\
+\end{aligned}
+$$
+
+
+Using the expression $A$ which is plugged into the $F-Test$ formula we get formula relating $R^2$ to the $F-Test$: 
+
+$$
+\begin{aligned}
+&F= \frac{n-p}{p-1} \times \frac{TSS-RSS}{RSS}\\
+&F \times \frac{p-1}{n-p} = \frac{TSS-RSS}{RSS}\\
+&F \times \frac{p-1}{n-p} = \frac{TSS}{RSS} - 1\\
+&F \times \frac{p-1}{n-p} + 1 = (1-R^2)^{-1}\\
+&(F \times \frac{p-1}{n-p} + 1)^{-1} = 1-R^2 \\
+&R^2= 1-(F \times \frac{p-1}{n-p} + 1)^{-1}
+\end{aligned}
+$$
+
+### Question 3(Exercise 3.7 on page 50 of LMR)
+
+###(A)
+```{r}
+lmodD<-lm(Distance~RStr + LStr+ RFlex + LFlex, data= punting)
+summary(lmodD)$coefficients
+#none 
+```
+none of the variables in the model are significant at 5% level.
+
+
+###(B)
+```{r}
+f<- summary(lmodD)$fstat
+1- pf(f[1], f[2], f[3])
+
+```
+
+we reject the null in favour of the alternative where at least one coefficient is non zero because p-value = `r 1- pf(f[1], f[2], f[3])`) <.05.
+
+###(C)
+```{r}
+lmodDR<-lm(Distance~I(RStr + LStr)+ RFlex + LFlex, data = punting)
+summary(lmodDR)
+anova(lmodDR, lmodD)
+```
+
+Based on the p-values >.05, we fail to reject h0=B_rstr=B_lstr = 0, where the proposed simplification to the model may be justified.
+
+###(D)
+```{r}
+ci <- confint(lmodD)
+plot(ellipse(lmodD, c(2,3)), type ="l")
+abline(h =ci[3,], v = ci[2,], lty = 2 )
+abline(h= 0, v = 0, col = "red")
+
+lmodDR1<-lm(Distance~ RFlex + LFlex, data = punting)
+anova(lmodDR1, lmodD)
+```
+
+We fail to reject the null of B1_rstr=B2_lstr= 0. Because the origin falls within the ellipse. Since our test in c shows that RStr + LStr has the same effect as using the variables separately. We see from the test above that the two variables separately or combined might not have any significant contribution to the reponse. This is also confirmed with a partial f-test where p-values > .05. 
+
+### Question 4
+
+
+###(A)
+
+```{r}
+
+set.seed(123)
+
+nr <- nrow(teengamb)
+
+teen <-teengamb
+
+teen$y <- rnorm(nr)
+
+
+model<-lm(y~sex + status + income+ verbal, data = teen)
+summary(model)
+```
+We would fail to reject the null because the p-value > .05. 
+
+###(B)
+
+```{r}
+set.seed(123)
+
+B <- 5000
+x <- numeric(B)
+
+for(b in 1:B) {
+  teen <-teengamb
+  teen$y <- rnorm(nr)
+  o.full<-lm(y~sex + status + income+ verbal, data = teen)
+  x[b]<- summary(o.full)$fstat[1]
+ 
+}
+```
+
+###(C)
+
+```{r}
+hist(x, freq=F, col= "wheat" )
+curve(df(x, 4, 42), add = T, col = "red")
+```
+
+Yes, the claim is true, the plot proves that the simulation of the 5000 f plotted gives the f-distribution.  
+
