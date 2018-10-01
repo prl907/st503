@@ -1,8 +1,9 @@
 ---
 title: "ST 503 Hw 2"
 author: "Robin Baldeo"
-output:  word_document
-
+output:
+  html_document:
+    df_print: paged
 ---
 <style>
 body {

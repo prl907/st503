@@ -39,6 +39,7 @@ anova(lmodR, lmod)
 
 
 #c
+
 n<- 2000
 
 ttest<-numeric(n)
@@ -50,7 +51,7 @@ for(i in 1:n){
 }
 
 
-2 * mean(ttest<summary(lmod)$coefficients[4,3]) 
+2 * mean(ttest<summary(lmod)$coefficients[4,3])
 
 hist(ttest, freq = F, col = "wheat")
 x<-ttest

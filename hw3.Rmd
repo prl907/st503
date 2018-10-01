@@ -1,0 +1,221 @@
+---
+title: St 503 HW 3
+author: Robin Baldeo
+output: html_document
+---
+
+
+
+```{r message = F, error=FALSE, warning=F,echo = F}
+library("faraway")
+library("knitr")
+```
+###Question 1(4.1)
+
+
+Building the model with `lpsa` as the response and the other variables as the explanatory variables.  
+```{r echo=F }
+lmod<-lm(lpsa~lcavol + lweight + age + lbph  + svi +  lcp + gleason + pgg45 , data= prostate)
+```
+
+####(A)
+```{r}
+#creating dataframe for prediction for a 65 year old patient 
+df<- data.frame(matrix(c(1.44692, 3.62301, 65.00000, 0.30010, 0.00000, -0.79851, 7.00000,  15.00000), ncol= 8))
+colnames(df)<-names(prostate) [names(prostate) !="lpsa" ] 
+df
+
+#individual predction for 65 year old person 
+aw<- predict(lmod, df, interval="prediction")
+aw
+```
+
+We are 95% confident that the Individual prediction for a 65 year old patient with the above input has predicted lpsa of `r aw[1]` with Confidence interval between `r aw[2]` and `r aw[3]`
+
+
+####(B)
+```{r}
+#creating dataframe for prediction 
+# age 20
+df<- data.frame(matrix(c(1.44692, 3.62301, 20.00000, 0.30010, 0.00000, -0.79851, 7.00000,  15.00000), ncol= 8))
+colnames(df)<-names(prostate) [names(prostate) !="lpsa" ] 
+df 
+#individual prediction for a 20 year old
+bw<- predict(lmod, df, interval="prediction")
+bw
+
+```
+
+We are 95% confident that the Individual prediction for a 20 year old patient with the above input has predicted lpsa of `r bw[1]` with Confidence interval between `r bw[2]` and `r bw[3]`.
+The confidence width for the prediction of the 65 year old patient is `r abs(aw[3]- aw[2])`. While the Confidence width for the 20 year old patient is `r abs(bw[3]- bw[2])`. Therefore the CI for the 20 year old patient is much wider as a result there is more uncertainty. Since the dataset prostate contains information for patients that are greater than 40.  
+
+####(C)
+
+From the full model `lmod`, only the 3 explanatory variables have p-values less than .05. These variables are `lcavol`,` lweight` and `svi`.
+
+```{r}
+
+#full
+summary(lmod)
+lred<-lm(lpsa~lcavol + lweight + svi  , data= prostate)
+
+#reduced
+summary(lred)
+
+```
+
+```{r}
+#partial f test
+anova(lred, lmod)
+```
+The test above shows an f-value p-value >.05 meaning we should fail to reject the null, where `age`, `lbph`, `lcp`, `gleason`, and `pgg45` in combination do not contribute to the overall quality for the model. Therefore the reduced model is preferred. 
+
+```{r}
+#retesting using the reduced model
+df<- data.frame(matrix(c(1.44692, 3.62301,  0.00000), ncol= 3))
+colnames(df)<-c("lcavol","lweight" ,"svi")
+df
+#individual prediction
+cw<- predict(lred, df, interval="prediction")
+cw
+```
+
+The Confidence width for the previous question is  `r abs(bw[3]- bw[2])`. Now the with the preferred model the confidence width is `r abs(cw[3]- cw[2])`.Therefore the width of the preferred model is much narrower meaning less uncertainty.As a result I would prefer the prediction of the preferd model over the full model.
+
+###Question 2(4.2)
+
+
+
+```{r}
+lmod2 <- lm(gamble ~ sex + status + income + verbal, data=teengamb)
+
+des<-model.matrix(lmod2)
+```
+
+####(A)
+
+```{r}
+male_a<-apply(des, 2, mean)
+male_a[2]<-0
+male_a
+
+a<- predict(lmod2, newdata=data.frame(t(male_a)), interval="confidence")
+a
+```
+
+The prediction given the data set at a 95% CI is `r a[1]`. While we are 95% confident that the true average amount spent on gambling for a male with the above parameters would be between `r a[2]` and `r a[3]` pounds. 
+
+####(B)
+
+```{r}
+male_b<-apply(des, 2, max)
+male_b[2]<-0
+male_b
+
+b<-predict(lmod2, newdata=data.frame(t(male_b)), interval="confidence")
+b
+```
+
+The prediction given the data set at a 95% CI is `r b[1]`. While we are 95% confident that the true average amount spent on gambling for a male with the above parameters would be between `r b[2]` and `r b[3]` pounds. The width of the CI in part a is `r abs( a[2]- a[3])`, while for b the width is `r abs( b[2]- b[3])`. So part b has a much wider interval. This is expected since the predicted value for part b is much larger than part a.
+
+####(C)
+
+```{r}
+lmod2 <- lm(sqrt(gamble) ~ sex + status + income + verbal, data=teengamb)
+
+
+new<- (predict(lmod2, newdata=data.frame(t(male_a)), interval="confidence"))^2
+#answer in orginal units as the response
+new
+```
+
+The prediction given the data set at a 95% CI is `r new[1]`. While we are 95% confident that the predicted interval for a male individual spending on gambling with the values from part a would be between `r new[2]` and `r new[3]` pounds.
+
+
+####(D)
+
+```{r}
+fem_a<-data.frame(matrix(c(1,20,1,10), ncol = 4))
+names(fem_a)<-c("sex", "status", "income", "verbal")
+
+#prediction for the average female with the give para
+predict(lmod2, newdata=fem_a, interval="confidence")
+```
+
+I don't think this model is  a good model based on the negative prediction and confidence interval. There are no negative values given for gamble in the dataset teengamb.
+
+###Question 3(6.1)
+
+```{r}
+lmod6<- lm(total~expend+salary+ratio+ takers,data = sat)
+
+summary(lmod6)
+
+```
+####(A)
+
+```{r}
+#a check constatnt varaiance assumption
+
+hat<-lmod6$fitted.values
+
+resi<-lmod6$residuals
+
+plot(hat, resi, xlab="fitted", ylab="residuals")
+abline(h = 0)
+```
+
+```{r}
+#standarize model
+
+stmod<-rstandard(lmod6)
+
+plot(hat, stmod, xlab="fitted", ylab="residuals")
+abline(h = 0)
+
+```
+
+Both the unstandardized and standardized plot shows some sort of pattern, a slight upwards curve. It appears the points are not randomly dispersed where there is a clustering of points at both ends. Because of this I would say that the non- constant variable assumption is violated. 
+I would use transformation like a log or sqrt on the response. Hopefully this fixes the model. 
+
+####(B)
+
+```{r}
+#unstandard
+hist(resi, freq = F)
+qqnorm(resi)
+qqline(resi)
+
+
+#standardized
+hist(stmod, freq = F)
+qqnorm(stmod)
+qqline(stmod)
+```
+
+Form both the unstandardized and standardized we see  skewed histograms. This is further shown with the qq- plots where there is slight skewering. To fix this I suggest transformation. 
+
+###Question 4
+
+####(A)
+The reason smoking causing lung cancer argument might fail is although there might be some correlation between smoking and lung cancer this correlation might be coincidental. There might be other variables that that distorts the observed relationship between the response lung cancer and the explanatory variable smoking. This other variable or confounding variable that may have more of a direct relationship with the response may not be the focus of the study.
+
+For example, with our study the confounding variables could be the environment, age or genetic makeup of the people in the study. If the age of all 100 individuals studied are older than 70 or 80 one would expect a difference in health status in comparison to a study of people in their 20 or 30's. Environment could also be another confounding variable, if the participants of the study were people who worked as cold miners, then also this would differ greatly from someone who works in an office environment.
+
+Therefore, the presence of confounding variables in a study might complicate the conclusion making us come to faulty causation between the response and the explanatory variable being studied. 
+
+####(B)
+Since we are not concern about the ethical part of my study. My experimental unit would consist of 80 18 year old healthy people that have never smoked. 
+```{r echo=F}
+df<- data.frame("Gender"= c("18 year of Males", "18 year of Female"), "Cigarettes"= c("tobacco", "placebo "))
+kable(df)
+```
+
+Gender and cigarettes would be my explanatory variables. Gender would consist of two levels males and female, while cigarettes would consist of placebo (something that feels like a real tobacco cigarette but would not have any of the substance like a tobacco cigarette) and real tobacco cigarettes. My treatment groups would be:
+
+```{r echo=F}
+df<- data.frame("Treatments"= c("males assigned to placebo", "males assigned to tobacco","females assigned to placebo", "females assigned to tobacco" ), "Units"=c(20,20,20,20))
+kable(df)
+```
+
+I would randomly assign people to each treatment. People within the treatment group or other treatment group would not interact. Then I would mandate that the experimental units smoke the placebo or the tobacco at least twice a day. I would then continue the study for the next 50 years. At the end of the study I would see who developed cigarettes.
