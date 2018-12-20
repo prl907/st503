@@ -1,0 +1,284 @@
+---
+title: "ST 503 Hw 5"
+author: "Robin Baldeo"
+date: "November 12, 2018"
+output: word_document
+---
+```{r message = FALSE, error= FALSE,warning=FALSE, echo = FALSE}
+library(splines)
+library(faraway)
+library(leaps)
+library(MASS)
+
+```
+
+### Question 1(Exercise 10.7 in LMR)
+
+```{r}
+
+set.seed(1)
+funky<- function(x) sin(2*pi*x^3)^3
+x<- seq(0,1, by=.01)
+y<- funky(x) + .1*rnorm(101)
+
+```
+
+####(A)
+
+```{r}
+plot(x, y)
+mod12<- lm(y~bs(x,12))
+pr<- predict(mod12,newdata = as.data.frame(x ))
+lines(x, pr, col = "red")
+
+```
+
+####(B)
+
+```{r}
+#using r built in AIC
+AIC(mod12)
+```
+The AIC for the model with 12 knots is `r AIC(mod12)`.
+
+####(C)
+
+```{r}
+
+plot(x, y, main= "Plot of model with 14 knots and 12 knots")
+lines(x, pr, col = "red")
+
+f<- function(p){
+  mod<- lm(y~bs(x,p))
+  return(AIC(mod))
+}
+
+
+aic_<- matrix(, nrow= length(3:20), ncol = 2)
+best <- matrix(, nrow= 1, ncol = 2)
+
+#extract model with the lowest AIC
+for(i in seq(3:20)){
+  j = i + 2;
+  aic_[i, 1]= f(j);  aic_[i, 2]= j
+  if(i == length(3:20)){
+    for(v in 1:length(3:20)){
+      if(aic_[v, 1] == min(aic_[, 1])){
+        #sotring the lowest aic to use as best plot
+        best[1,1] = aic_[v,1];  best[1,2] = aic_[v,2]
+        aic_[v,1]
+        break
+      }
+    }
+  }
+}
+
+#best model 14 knots
+
+legend("topleft", legend = c("12 knots", "14 knots"),col=c("red", "blue"), lty=c(1,1, 1, 5), bty = "n")
+mod14<- lm(y~bs(x,best[1,2]))
+pr2<- predict(mod14,newdata = as.data.frame(x ))
+lines(x, pr2, col = "blue")
+best
+```
+
+The lowest aic is `r best[1,1]`, this is from the model with `r best[1,2]` knots. Therefore, the model with `r best[1,2]` knots is the best model.
+
+### Question 2(Exercise 10.8 in LMR)
+
+####(A)
+
+```{r}
+mod<- lm(odor~temp + gas + pack + I(temp^2)+ I(gas^2) + I(pack^2) + I(temp*gas) + I(temp* pack)+ I(pack* gas), data= odor)
+summary(mod)
+```
+
+
+####(B)
+```{r}
+o1<- update(mod,.~.-I(temp*pack));summary(o1)
+o2<- update(o1,.~.-I(pack*gas));summary(o2)
+o3<- update(o2,.~.-I(temp*gas));summary(o3)
+o4<- update(o3,.~.-I(pack^2));summary(o4)
+o5<- update(o4,.~.-temp) ;summary(o5)
+
+#best model based on backward elimination 
+be<- paste((summary(o5))$call, "")
+```
+
+The best model based using the backwards elimination is `r be`. Where `odor` is the response and `gas`, `pack`, `temp^2` and `gas^2` are predictors. 
+
+
+####(C)
+```{r}
+aic<- step(mod, direction = "backward")
+
+aic$coefficients
+```
+
+Using the backwards elimination in the Step function. The best model gives `odor` as the response and `temp`, `gas`, `pack`, `temp^2` and `gas^2` are predictors. Using calculus, the model is optimized when `temp` = `r 63.2308/-12.125` and `gas` = `r (2* 47.36538) /-17`.
+
+### Question 3(Exercise 11.3 in LMR)
+
+```{r}
+lambda<- seq(0,60, length.out = 200)
+rMod<- lm.ridge(hipcenter~. , data = seatpos, lambda= lambda)
+#summary(rMod)
+
+plot(lambda, 0 * lambda, type="n", xlab=expression(lambda), ylab=expression(hat(beta)), ylim=range(rMod$coef))
+
+#assigning colors to the variables in the plot.
+col<- c("red", "green", "blue", "yellow", "purple", "orange", "wheat", "pink")
+
+for(j in 1:8) {
+  lines(lambda, rMod$coef[j,], col=col[j])
+}
+legend("bottomright", legend = c("Age", "weight", "htShoes", "ht", "seated", "arm", "thigh", "leg"),col=col, lty=rep(1, by = 8), bty = "n")
+abline(v=lambda[which.min(rMod$GCV)], lwd=2, lty = 2, col = "black" )
+pred<- coef(rMod)[which.min(rMod$GCV),-1]
+
+#values from question 1
+po = matrix ( c (64.800, 263.700, 181.080, 178.560, 91.440, 35.640, 40.950, 38.790 ) , nrow =1)
+
+#prediction using values from question 1
+pre<- 403.0148+ t(as.matrix(pred))%*%t(po)
+```
+
+Prediction using the information from question 11.1, give a prediction values of `r pre`.
+
+### Question 4 (Simulation question )
+
+
+####(A)
+
+```{r}
+
+x<- matrix(rnorm(10* 100, 0, 1), ncol = 10)
+
+#subset matrix to first 3
+x_<- x[,1:3]  
+ 
+e<- matrix(rnorm(100, 0, 1), nrow = 100)
+
+y<-0 + 1*x[,1] + 2* x[,2] + 3* x[,3] + e
+
+#fitting model to least square
+tr<- summary(lm(y~x_))$sigma
+
+```
+
+The true $\sigma^2$ is `r tr`.
+
+
+####(B)
+
+```{r}
+# This function takes the response y and the predictor matrix x and preform the subset and return the model sigma square with the lowest aic
+
+sim<- function(x,y){
+  
+    #data frame to hold the response and predictors
+    df<- data.frame(y, x)
+    oo<- regsubsets(y~., data = df, nvmax = 10)
+    oo.s<- summary(oo)
+
+    #aic cacluation for the 11
+    aic <- nrow(df)* log(oo.s$rss) + 2 * (2:11)
+
+    #adding the the index to the coresssponding AIC
+    temp<- matrix(nrow=10, ncol = 2)
+    for( i in 1:length(aic)){
+      temp[i,1]= aic[i]
+      temp[i,2]= i
+    
+    }
+    
+    index<- temp[temp[,1]== min(temp[,1]), ]
+    
+    #identify the model with the lowest AIC then store model in temp2
+    temp2<- (oo.s$which)[index[2],]
+    
+    #construct string with best model
+    str = "lm(y~"
+    
+    co<- 0
+    for(p in 1:length(temp2)){
+      if(p > 1){
+        k = p -1
+        if(temp2[p]== TRUE){
+          co = co + 1
+          if(co == 1){
+            str<- append(str, paste("X", k, sep =""))
+          }else{
+            str<- append(str, paste("+X", k, sep =""))
+          }
+        }
+        if(p == length(temp2)){
+            str<- append(str, paste(",data = df)", sep =""))
+        }
+      }
+    }
+    
+    #concatination of model into one string 
+    t<- paste(str, collapse = " ")
+    
+    #return sigma from model with lowest AIC
+    return((summary(eval(parse(text=t)))$sigma)^2)
+}
+#
+
+aic_sig<- sim(x=x, y = y)
+
+```
+
+The aic $\sigma^2$ is `r aic_sig` from the best model with the lowest AIC. While the true $\sigma^2$ is `r tr`.
+
+
+####(C)
+
+```{r}
+
+
+sigma.true<- as.double(500)
+sigma.aic<- as.double(500)
+
+for(m in 1:500){
+  # simulation of x
+  x<- matrix(rnorm(10* 100, 0, 1), ncol = 10)
+  #subset x to first 3 rows
+  x_<- x[,1:3]  
+  #simulation of error
+  e<- matrix(rnorm(100, 0, 1), nrow = 100)
+  #simulation of y
+  y<-0 + 1*x[,1] + 2* x[,2] + 3* x[,3] + e
+  
+  #storing true values
+  sigma.true[m]<- (summary(lm(y~x_))$sigma)^2
+  
+  #storing aic
+  sigma.aic[m]<- sim(x=x, y = y)
+  
+  
+}
+
+df<- data.frame(sigma.aic, sigma.true)
+plot(sigma.true,sigma.aic, col = "red", main = "plot of true vs aic")
+
+
+```
+
+Most of the points are cluster between .8 and 1.3, points to aic $\sigma^2$ being biased. 
+
+####(D)
+```{r}
+
+df<- data.frame(sigma.true, sigma.aic, sigma.true- sigma.aic)
+
+#%percentage that contian the true sigma
+prop<- length(df$sigma.true...sigma.aic[(df$sigma.true...sigma.aic== 0)])/ length(df)
+```
+I think this scatter plot from part c confirm that the aic $\sigma^2$ are biased. We see that `r round(prop, 2)`% of the simulation aic $\sigma^2$ is identical to the true $\sigma^2$. While the other  points are not unbiased. Concluding that the simulation proves the statement of the problems is correct.
+
+
+
+

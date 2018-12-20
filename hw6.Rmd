@@ -1,0 +1,316 @@
+---
+title: "ST 503 Hw 6"
+author: "Robin Baldeo"
+date: "November 23, 2018"
+output: html_document
+---
+
+```{r message = FALSE, error= FALSE,warning=FALSE, echo = FALSE}
+library(faraway)
+library(leaps)
+library(MASS)
+
+```
+
+
+
+#Question 1 (Exercise 2.2)#
+
+####(A)
+```{r}
+q1<- glm(Class~., data = wbca, family=binomial)
+q1.s<- summary(q1)
+
+q1.s
+
+#deviance
+dev<- q1.s$deviance
+
+#degree of freedom
+df<- q1.s$df[2]
+
+#determine the fit
+pchisq(dev,df, lower.tail = F)
+```
+
+
+Using just the deviance `r dev` and the residual degree of freedom `r df` is not enough to determine the fit we must find the p-value from the chi square distribution. Since the p-value is greater than .05 we fail to reject the null and conclude that the binominal is a satisfactory fit. 
+
+
+
+####(B)
+```{r}
+q2<- step(q1, direction = "backward")
+q2.s<- summary(q2)
+
+# the best model with the lowest aic is 
+q2.s$call
+```
+
+The best model with the lowest AIC is with `class` as response and `Adhes`, `BNucl` , `Chrom` , `Mitos` ,`NNucl`, `Thick` ,and  `UShap` as predictors. 
+
+####(C)
+```{r}
+# using the parameters from question 1
+#prediction
+pi<- t(as.matrix(q2$coefficients))%*%as.matrix(c(1,1, 1, 3, 1, 1, 4, 1), nrow= 1)
+pi
+
+#confidience interval
+#using the values from question for prediction
+x0<- as.matrix(c(1,1, 1, 3, 1, 1, 4, 1), nrow= 1)
+
+oo<- eval(q2.s$call)
+
+eta.hat <- sum(x0 * oo$coefficients)
+p.hat <- ilogit(eta.hat); p.hat
+Sigma <- (summary(oo))$cov.unscaled
+
+#calucating the se
+se <- sqrt( t(x0) %*% Sigma %*% x0 )
+
+#getting the 95% for the prediction 
+ci<- ilogit(c(eta.hat - 1.96 * se, eta.hat + 1.96 * se))
+```
+
+The Ci is (`r ci`).
+
+####(D)
+```{r}
+
+#function to do comparison
+com<- function(o,p){
+  v<- as.numeric(rep(0, length(o)))
+  for(i in 1:length(o)){
+    for(j in 1:length(p)){
+      if(o[i] == p[j]){
+        v[i]= 0
+        break;
+      }else{
+        v[i]= 1
+      }
+    }
+  }
+  return(sum(v))
+}
+
+# malignant
+pre.m<- which(oo$fitted.values<.5)
+or.m<- which(wbca$Class==0)
+
+mi<- com(o= or.m, p = pre.m)
+
+#11 misclassied 
+
+#benign
+pre.b<- which(oo$fitted.values>.5)
+or.b<- which(wbca$Class==1)
+
+be<- com(o= or.b, p = pre.b)
+
+#9 misclassfied
+
+```
+
+With malignant there were `r mi` and with the benign , there were `r be` that were misclassified. 
+
+####(E)
+```{r}
+
+pre.m<- which(oo$fitted.values<.9)
+or.m<- which(wbca$Class==0)
+
+mi<- com(o= or.m, p = pre.m)
+
+#1 misclassied 
+
+#benign .9
+pre.b<- which(oo$fitted.values>.9)
+or.b<- which(wbca$Class==1)
+
+be<- com(o= or.b, p = pre.b)
+
+#16 misclassfied
+```
+
+With Malignant there were `r mi` and with the benign there were `r be` that were misclassified. Looking a the .5 cut off and the .9 cut off, I think it is difficult to determine an ideal cut off number. We get very different results with these cut off numbers and choosing the incorrect cut off would results in incorrect classification. 
+
+
+####(F)
+```{r}
+#getting the every 3rd index
+r<- as.numeric(rep(0, nrow(wbca)))
+o<- as.numeric(rep(0, nrow(wbca)))
+for(i in 1:nrow(wbca)){
+  if(i%%3 == 0){
+    r[i]= i
+  }else{
+    o[i]= i
+  }
+}
+#filter out the 0
+r<- r[r>0]
+o<- o[o>0]
+
+test<- wbca[r,,drop= FALSE]
+
+train<- wbca[o,,drop= FALSE]
+
+
+#using training to determine best model with lowest aic
+
+tr<- glm(Class~., data = train, family=binomial)
+summary(tr)
+
+tr.1<- step(tr, direction = "backward")
+tr.2<- summary(tr.1)
+
+# the best model with the lowest aic is 
+tr_r<- eval(tr.2$call, tr)
+
+#comparing models
+re<- anova(tr_r, tr)
+
+pchisq(re$Deviance[2],re$Df[2])
+
+#since we have a large p-value greater than alpha then the simpler model is prefered. 
+
+#using the test data to the precistion like in part c
+#using the values from question for prediction
+
+oo<- glm(Class ~ Adhes + BNucl + Chrom + Mitos + NNucl +   Thick + UShap, family = binomial, data = test)
+
+eta.hat <- sum(x0 * oo$coefficients)
+p.hat2 <- ilogit(eta.hat); 
+p.hat2
+
+```
+
+Here we see the model is identical to the reduced model from part c using the `train` data. Now we also see that the prediction value using parameters from question 1 (used in part c) `r p.hat` is near identical to the prediction using the `test` data where prediction is `r p.hat2` using the same parameters. Therefore, the process of splitting the data into two parts yields almost the same prediction as part c.
+
+
+
+#Question 2 (Exercise 3.1)#
+
+```{r}
+#block the data into groups of 5 X 20 matrix
+m<- matrix(discoveries,  ncol  =  20)
+
+#variable to hold the sum of the blocks 
+rate<- apply(m, 2, sum)
+block<- apply(m, 2, length)
+year<- seq(1:20)
+
+mod_p1<- glm(rate~  year , family= poisson)
+summary(mod_p1)
+
+mod_p2<- glm(rate~ offset(log(block))+ year , family= poisson)
+summary(mod_p2)
+
+plot(mod_p2$fitted.values , ylim = c(0, 20), type= "l", ylab = "Predicted", xlab="Year blocks", main = "Discoveries in 5 years blocks")
+
+#From the plot the rate of discoveries appears to be on the decrease over the years instead of constant.
+```
+
+From the plot the rate of discoveries appears to be on the decrease over the years instead of constant.
+
+#Question 3
+
+####(A)
+
+
+```{r, message = FALSE, error= FALSE,warning=FALSE}
+x <- seq(-5, 5, length=10)
+y <- as.numeric(x > 0)
+
+plot(x,y)
+mod<- glm(y~x-1, family = binomial)
+
+summary(mod)
+
+xx <- seq(-5, 5, len=100)
+lines(xx, ilogit(mod$coefficients[1]  * xx), col=2)
+
+
+
+#ci for B
+confint(mod)
+```
+
+Based on the CI, we can see the breakdown of the MLE. The MLE fails and we cannot utilize the Wald test , therefore we have a lower bound and no upper bound. 
+
+
+####(B)
+```{r}
+loglik <- function(theta) {
+  
+  # a <- theta[1]
+  b <- theta[1]
+  #using the logit formula
+  p <- sapply(x, function(p){(exp(1)^(b*p))/(1+ exp(1)^(b*p))})
+  o <- sum(dbinom(y, size=1, prob=p, log=TRUE))
+  return(o)
+  
+}
+
+nlogPoint<- as.double()
+for( i in 20:60){
+  nlogPoint[i]<- loglik(i)
+}
+
+plot(nlogPoint, xlab  = "Beta", col = "red", type = "o")
+
+#vertical line of b-hat
+abline(v=mod$coefficients[1], col = "blue")
+
+```
+
+Above we see separation from the plot where the plot fits perfectly. This is also evident with the extremely large standard error. Indicating our estimate is junk.
+
+####(C)
+The plot show our function bound by 0 and does not meet a maximum but instead stays constant. I think that is the reason why the standard error is so large. 
+
+
+#Question 4
+
+####(A)
+
+Given $E(V)= k\alpha$ and $Var(V)= k\alpha^2$ which follows a Gamma distrubtion. Also, given is $E(U|V) = v$ with $Var(U|V)= v$ which follows a poisson distrubtion. 
+Therefore using the law of total expectation:
+$$E(U)= E(E(U|V))$$
+$$=E(V)$$
+$$=k\alpha$$
+Using the law of total varaince:
+$$Var(U)= E(Var(U|V))+ Var(E(U|V))$$
+$$= E(V) + Var(v)$$
+$$=k\alpha + k\alpha^2 $$
+proven. 
+
+
+####(B)
+The negative binominal is more flexible because the variance of the poisson and the mean of the poisson distribution are the same leaving less room for flexibility and resulting in overdispersion. As a result from the summary output. However, with the negative binominal distribution the mean and the variance is different.
+
+
+####(C)
+
+```{r}
+#using model from test book page 64
+modp <- glm(Species ~ .,family=poisson, gala)
+
+summary(modp)
+
+plot(residuals(modp, type="pearson"))
+
+#negative binominal model
+modnb<- glm(Species ~ .,negative.binomial(1), gala)
+
+summary(modnb)
+legend("topright", legend = c("poisson","negative binomial"),col=c("black", "red"), pch = c(1,2), bty = "n")
+points(residuals(modnb, type="pearson"), col = 2, pch = 2)
+
+abline(h= 0)
+
+```
+
+As show in the plot the using the poisson family in the glm(black), we see that the variance is much larger as shown where the points are more spread out from zero. This is different in regards to the negative binominal where the residuals are more clustered around 0. 
+
